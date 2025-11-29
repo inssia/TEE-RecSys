@@ -6,45 +6,15 @@ This project uses the MovieLens 100k dataset, collected by the GroupLens Researc
 
 This project can be run either fully locally or with a cloud TEE component. For the full proof-of-concept, it is recommended that you run it with the cloud deployment.
 
-## Architecture Overview
+## Contents
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     UNTRUSTED HOST (Platform's Infrastructure)      │
-│                                                                     │
-│  ┌──────────────────────────┐    ┌───────────────────────────────┐  │
-│  │    EMBEDDING TABLES      │    │    CANDIDATE GENERATION       │  │
-│  │                          │    │                               │  │
-│  │  • User embeddings       │───▶│  1. Select candidate items    │  │
-│  │    (N × D matrix)        │    │  2. Fetch user_vec by ID      │  │
-│  │  • Item embeddings       │    │  3. Fetch item_vecs by IDs    │  │
-│  │    (M × D matrix)        │    │  4. Send ONLY vectors to TEE  │  │
-│  │                          │    │     (NO IDs cross boundary)   │  │
-│  │  Size: 100s of GB        │    │                               │  │
-│  └──────────────────────────┘    └───────────────────────────────┘  │
-│                                              │                      │
-└──────────────────────────────────────────────│──────────────────────┘
-                                               │ vectors only
-                                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     TEE (Phala Cloud / SGX / TDX)                   │
-│                                                                     │
-│  ┌────────────────────────────────────────────────────────────────┐ │
-│  │                    RELEVANCE ESTIMATOR                         │ │
-│  │                                                                │ │
-│  │    score = MLP(concat(user_vector, item_vector))               │ │
-│  │                                                                │ │
-│  │    • Stateless scoring function                                │ │
-│  │    • No knowledge of user/item identities                      │ │
-│  │    • Auditable logic                                           │ │
-│  │    • Size: < 100 MB                                            │ │
-│  └────────────────────────────────────────────────────────────────┘ │
-│                                                                     │
-└──────────────────────────────────────────────│──────────────────────┘
-                                               │ scores only
-                                               ▼
-                                     Rankings returned to host
-```
+- [Properties](#properties)
+- [File Structure](#project-file-structure)
+- [Running the Code](#running-the-code)
+  - [Local Deployment](#local-deployment)
+  - [Cloud Deployment](#phala-cloud-deployment)
+- [API](#api-endpoints)
+- [References](#references)
 
 ## Properties
 
@@ -56,7 +26,7 @@ This project can be run either fully locally or with a cloud TEE component. For 
 6. Scorer fits in TEE memory limits
 4. Works with real TEE infrastructure (Phala Cloud)
 
-## Overview of Project Structure
+## Project File Structure
 
 ```
 TEE-RecSys/
