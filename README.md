@@ -165,6 +165,6 @@ python demo.py --mode demo --tee-url https://<app-id>-4768.dstack-prod5.phala.ne
 
 ## References
 
-- Phala Cloud Documentation: https://docs.phala.network
+- Phala Cloud Documentation: https://docs.phala.com
 - Intel SGX: https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/overview.html
-- MovieLens Dataset: https://grouplens.org/datasets/movielens/
+- MovieLens Datasets: https://grouplens.org/datasets/movielens/
