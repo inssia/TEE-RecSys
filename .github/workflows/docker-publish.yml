@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # <--- This is a REAL Intel AMD64 machine
+    runs-on: ubuntu-latest  # <--- Intel AMD64 machine (for TEE compatibility)
 
     steps:
       - name: Checkout code
@@ -30,6 +30,6 @@ jobs:
           push: true
           # This forces a clean, native AMD64 build
           platforms: linux/amd64
-          tags: inssia/tee-relevance-estimator:v2
+          tags: inssia/tee-relevance-estimator:v3
           cache-from: type=gha
           cache-to: type=gha,mode=max
