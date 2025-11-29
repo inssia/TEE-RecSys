@@ -7,8 +7,8 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 
 # Install standard packages
-COPY tee-requirements.txt .
-RUN pip install --no-cache-dir -r tee-requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Use CPU-only torch to save space/RAM; version must match training
 RUN pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
