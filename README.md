@@ -69,8 +69,8 @@ You should see a new directory called `model_weights`, containing:
 - `relevance_estimator.pt`
 
 This is the partitioned model. 
-To update the TEE relevance_estimator model, you will have to copy the new `relevance_estimator.pt` into the tee_server/model_weights directory.
-To run the scorer locally, create a new directory called app/model and copy `relevance_estimator.pt` into that. This is because tee_scorer assumes it is running in a cloud env. 
+To update the TEE relevance_estimator model, you will have to copy the new `relevance_estimator.pt` into the tee_server/model_weights directory. \n
+To run the scorer locally, create a new directory called tee_server/app/model and copy `relevance_estimator.pt` into that. This is because tee_scorer assumes it is running in a cloud env. 
 
 ### Step 3: Run the Scorer Model Locally
 
