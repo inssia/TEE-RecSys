@@ -13,7 +13,7 @@ This project can be run either fully locally or with a cloud TEE component. For 
 - [Running the Code](#running-the-code)
   - [Local Deployment](#local-deployment)
   - [Cloud Deployment](#phala-cloud-deployment)
-- [API](#api-endpoints)
+- [API](#api-endpoints-tee-server)
 - [References](#references)
 
 ## Properties
