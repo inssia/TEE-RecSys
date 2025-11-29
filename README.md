@@ -139,6 +139,7 @@ docker push <your-dockerhub-username>/tee-relevance-estimator:latest
 ### Step 2: Deploy to Phala Cloud
 
 Follow instructions on https://docs.phala.com/phala-cloud/getting-started/start-from-cloud-ui
+You can find the docker-compose spec for phala cloud in tee_server/. Just copy and paste the .yml file into the UI.
 
 ### Step 3: Get Your TEE Endpoint
 
