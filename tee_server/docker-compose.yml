@@ -1,0 +1,15 @@
+# Docker Compose for Phala Cloud TEE Deployment
+
+services:
+  tee-scorer:
+    image: ${DOCKER_USERNAME}/tee-relevance-estimator:latest
+    platform: linux/amd64
+    ports:
+      - "4768:4768"
+    environment:
+      - PORT=4768
+      - EMBEDDING_DIM=64
+      - MODEL_PATH=/app/model/relevance_estimator.pt
+      - TEE_ENV=phala_cloud
+    restart: unless-stopped
+
