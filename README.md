@@ -48,15 +48,15 @@ The project can be run either fully locally or with a cloud TEE component.
 
 ## Properties
 
-1. **No Side Channels**: The TEE never sees user IDs or item IDs - only opaque numeric vectors
-2. **Stateless Scoring**: The TEE is a pure function: `score = f(user_vec, item_vec)`
-3. **Cryptographic Attestation**: TEE provides proof of code integrity via remote attestation
-4. **Memory Isolation**: Scoring logic is protected from the host platform
-5. **Architectural Feasibility**: The model can be cleanly partitioned
-6. **Memory Constraints Met**: Scorer fits in TEE memory limits
-4. **Practical Deployment**: Works with real TEE infrastructure (Phala Cloud)
+1. The TEE never sees user IDs or item IDs - only opaque numeric vectors
+2. The TEE is a pure function: `score = f(user_vec, item_vec)`
+3. TEE provides proof of code integrity via remote attestation
+4. Scoring logic is protected from the host platform
+5. The model can be cleanly partitioned
+6. Scorer fits in TEE memory limits
+4. Works with real TEE infrastructure (Phala Cloud)
 
-## Project Structure
+## Overview of Project Structure
 
 ```
 TEE-RecSys/
@@ -98,7 +98,9 @@ You should see a new directory called `model_weights`, containing:
 - `mappings.pkl`
 - `relevance_estimator.pt`
 
-This is the partitioned model. To update the TEE relevance_estimator model, you will have to copy the new `relevance_estimator.pt` into the tee_server/model_weights directory.
+This is the partitioned model. 
+To update the TEE relevance_estimator model, you will have to copy the new `relevance_estimator.pt` into the tee_server/model_weights directory.
+To run the scorer locally, create a new directory called app/model and copy `relevance_estimator.pt` into that. This is because tee_scorer assumes it is running in a cloud env. 
 
 ### Step 3: Run the Scorer Model Locally
 
