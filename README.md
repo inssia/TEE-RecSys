@@ -2,9 +2,9 @@
 
 Proof-of-concept implementation for auditing social media recommendation algorithms using Trusted Execution Environments (TEEs).
 
-This project is uses the MovieLens 100k dataset, collected by the GroupLens Research Project at the University of Minnesota (see: https://grouplens.org/datasets/movielens/100k/).
+This project uses the MovieLens 100k dataset, collected by the GroupLens Research Project at the University of Minnesota (see: https://grouplens.org/datasets/movielens/100k/).
 
-The project can be run either fully locally or with a cloud TEE component. 
+This project can be run either fully locally or with a cloud TEE component. For the full proof-of-concept, it is recommended that you run it with the cloud deployment.
 
 ## Architecture Overview
 
