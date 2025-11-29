@@ -30,6 +30,6 @@ jobs:
           push: true
           # This forces a clean, native AMD64 build
           platforms: linux/amd64
-          tags: inssia/tee-relevance-estimator:v5
+          tags: inssia/tee-relevance-estimator:v6
           cache-from: type=gha
           cache-to: type=gha,mode=max

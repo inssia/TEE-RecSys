@@ -295,3 +295,222 @@ if __name__ == "__main__":
 
     print(f"Starting TEE Server on port {port}...")
     app.run(host="0.0.0.0", port=port)
+
+
+# ============================================================================
+# MEMORY PROFILING ENDPOINTS (Optional)
+# ============================================================================
+
+import psutil
+
+"""
+Monolithic Model (for memory testing purposes only)
+basically combines huge user and item embeddings with tiny MLP
+"""
+
+
+class MonolithicRecSys(nn.Module):
+    def __init__(self, num_users, num_items, embedding_dim=64):
+        super().__init__()
+        self.user_embeddings = nn.Embedding(num_users, embedding_dim)
+        self.item_embeddings = nn.Embedding(num_items, embedding_dim)
+
+        self.mlp = nn.Sequential(
+            nn.Linear(embedding_dim * 2, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+            nn.Sigmoid(),
+        )
+
+        nn.init.xavier_uniform_(self.user_embeddings.weight)
+        nn.init.xavier_uniform_(self.item_embeddings.weight)
+
+    def forward(self, user_ids, item_ids):
+        user_vecs = self.user_embeddings(user_ids)
+        item_vecs = self.item_embeddings(item_ids)
+        combined = torch.cat([user_vecs, item_vecs], dim=-1)
+        return self.mlp(combined)
+
+
+@app.route("/test_memory", methods=["POST"])
+def test_memory():
+    """
+    Test if a model of given size can be loaded
+
+    Request:
+    {
+        "size_mb": 100,
+        "embedding_dim": 64  (optional, default 64)
+    }
+
+    Response:
+    {
+        "success": true/false,
+        "size_mb": 100,
+        "stage_reached": "allocation" | "eval" | "inference",
+        "allocation_time_ms": 123.45,
+        "inference_time_ms": 10.23,
+        "memory_used_mb": 105.67,
+        "error": "error message if failed"
+    }
+    """
+    data = request.get_json()
+
+    if not data or "size_mb" not in data:
+        return jsonify({"error": "Missing size_mb parameter"}), 400
+
+    target_size_mb = data["size_mb"]
+    embedding_dim = data.get("embedding_dim", 64)
+
+    # calculate dimensions needed
+    bytes_per_embedding = embedding_dim * 4
+    total_embeddings_needed = (target_size_mb * 1024 * 1024) / bytes_per_embedding
+    num_users = int(total_embeddings_needed * 0.5)
+    num_items = int(total_embeddings_needed * 0.5)
+
+    # get initial memory
+    process = psutil.Process(os.getpid())
+    mem_before = process.memory_info().rss / (1024 * 1024)
+
+    result = {
+        "success": False,
+        "requested_size_mb": target_size_mb,
+        "num_users": num_users,
+        "num_items": num_items,
+        "embedding_dim": embedding_dim,
+        "stage_reached": None,
+        "allocation_time_ms": None,
+        "inference_time_ms": None,
+        "memory_used_mb": None,
+        "error": None,
+    }
+
+    try:
+        # stage 1: allocation
+        t0 = time.perf_counter()
+        model = MonolithicRecSys(num_users, num_items, embedding_dim)
+        t1 = time.perf_counter()
+
+        result["allocation_time_ms"] = (t1 - t0) * 1000
+        result["stage_reached"] = "allocation"
+
+        mem_after_alloc = process.memory_info().rss / (1024 * 1024)
+        result["memory_used_mb"] = mem_after_alloc - mem_before
+
+        # stage 2: eval
+        model.eval()
+        result["stage_reached"] = "eval"
+
+        # stage 3: inference
+        user_ids = torch.randint(0, num_users, (100,))
+        item_ids = torch.randint(0, num_items, (100,))
+
+        t2 = time.perf_counter()
+        with torch.no_grad():
+            model(user_ids, item_ids)
+        t3 = time.perf_counter()
+
+        result["inference_time_ms"] = (t3 - t2) * 1000
+        result["stage_reached"] = "inference"
+        result["success"] = True
+
+        # clean up
+        del model
+
+    except RuntimeError as e:
+        error_msg = str(e)
+        result["error"] = error_msg
+
+        if "out of memory" in error_msg.lower():
+            result["error_type"] = "OOM"
+        else:
+            result["error_type"] = "RuntimeError"
+
+    except Exception as e:
+        result["error"] = str(e)
+        result["error_type"] = "UnexpectedException"
+
+    return jsonify(result)
+
+
+@app.route("/binary_search", methods=["POST"])
+def binary_search_limit():
+    """
+    Perform binary search to find exact memory limit
+
+    Request:
+    {
+        "min_mb": 10,
+        "max_mb": 500,
+        "tolerance_mb": 10  (optional, default 10)
+    }
+    """
+    data = request.get_json()
+
+    min_mb = data.get("min_mb", 10)
+    max_mb = data.get("max_mb", 500)
+    tolerance = data.get("tolerance_mb", 10)
+
+    results = []
+
+    while max_mb - min_mb > tolerance:
+        mid_mb = (min_mb + max_mb) // 2
+
+        # test this size
+        test_result = test_memory_internal(mid_mb)
+        results.append(test_result)
+
+        if test_result["success"]:
+            min_mb = mid_mb  # can go higher
+        else:
+            max_mb = mid_mb  # hit limit, go lower
+
+        # clean up between tests
+        time.sleep(1)
+
+    return jsonify(
+        {"estimated_limit_mb": min_mb, "tests_run": len(results), "details": results}
+    )
+
+
+def test_memory_internal(size_mb):
+    """
+    Internal version that doesn't require HTTP request
+    """
+    embedding_dim = 64
+    bytes_per_embedding = embedding_dim * 4
+    total_embeddings_needed = (size_mb * 1024 * 1024) / bytes_per_embedding
+    num_users = int(total_embeddings_needed * 0.5)
+    num_items = int(total_embeddings_needed * 0.5)
+
+    result = {
+        "size_mb": size_mb,
+        "success": False,
+        "stage_reached": None,
+        "error": None,
+    }
+
+    try:
+        model = MonolithicRecSys(num_users, num_items, embedding_dim)
+        result["stage_reached"] = "allocation"
+
+        model.eval()
+        result["stage_reached"] = "eval"
+
+        user_ids = torch.randint(0, num_users, (10,))
+        item_ids = torch.randint(0, num_items, (10,))
+
+        with torch.no_grad():
+            _ = model(user_ids, item_ids)
+
+        result["stage_reached"] = "inference"
+        result["success"] = True
+
+        del model
+
+    except Exception as e:
+        result["error"] = str(e)
+
+    return result
