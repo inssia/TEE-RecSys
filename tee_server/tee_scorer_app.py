@@ -11,6 +11,7 @@ import torch.nn as nn
 import os, sys
 from typing import List
 from flask import Flask, request, jsonify
+import time
 
 app = Flask(__name__)
 
@@ -190,6 +191,8 @@ def score_batch():
     Response:
     {
         "scores": [float, float, ...]  # one score per item
+        "compute_time_ms": float       # pure computation time
+        "total_server_time_ms": float  # total time inside this function
     }
     """
     global model
@@ -206,13 +209,35 @@ def score_batch():
         return jsonify({"error": "Missing user_vector or item_vectors"}), 400
 
     try:
+        # time only the tensor conversion
+        t0 = time.perf_counter()
         user_vec = torch.tensor(data["user_vector"], dtype=torch.float32)
         item_vecs = torch.tensor(data["item_vectors"], dtype=torch.float32)
+        t1 = time.perf_counter()
+        tensor_time = (t1 - t0) * 1000
 
+        # time only the forward pass (pure computation)
+        t2 = time.perf_counter()
         with torch.no_grad():
             scores = model(user_vec, item_vecs)
+        t3 = time.perf_counter()
+        inference_time = (t3 - t2) * 1000
 
-        return jsonify({"scores": scores.squeeze().tolist()})
+        # time the conversion back to list
+        t4 = time.perf_counter()
+        scores_list = scores.squeeze().tolist()
+        t5 = time.perf_counter()
+        serialization_time = (t5 - t4) * 1000
+
+        total_compute = tensor_time + inference_time + serialization_time
+
+        return jsonify(
+            {
+                "scores": scores_list,
+                "compute_time_ms": inference_time,  # Just the forward pass
+                "total_server_time_ms": total_compute,  # Everything inside this function
+            }
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
